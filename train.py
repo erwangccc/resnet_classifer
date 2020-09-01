@@ -3,7 +3,9 @@ from dataset import *
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from network import *
+# from resnet import ResNet, BasicBlock
 from tqdm import tqdm
+import torch.nn as nn
 
 
 if __name__=='__main__':
@@ -24,10 +26,11 @@ if __name__=='__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     writer = SummaryWriter(args.log_path, 'Training process of cars detection via ResNet18!')
     CEloss = nn.CrossEntropyLoss()
+    # resnet = ResNet(BasicBlock, [2, 2, 2, 2], 4)
     resnet = ResNet18(Basicblock, [2, 2, 2, 2], 224, 3, 4)
     resnet = resnet.to(device)
     resnet.apply(weights_init)
-    optimizer = optim.Adam(resnet.parameters(), lr=args.lr, weight_decay = 0.9999)
+    optimizer = optim.SGD(resnet.parameters(), lr=args.lr, weight_decay = 0.9999)
     # load train dataset
     train_dataset = data_loader(args.train_path, args.input_size,
                                 args.batch_size, args.n_cpu)
@@ -53,8 +56,8 @@ if __name__=='__main__':
             train_loss += loss.item()
             progressbar.set_description('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(imgs), len(train_dataset.dataset),
-                       100. * batch_idx / len(train_dataset),
-                       loss.item() / len(imgs)))
+                       100. * (batch_idx+1) / len(train_dataset),
+                       train_loss / (batch_idx+1) * len(imgs)))
         writer.add_scalar('loss/train', train_loss/len(train_dataset.dataset), epoch)
 
         if epoch%args.checkpoint_interval == 0:

@@ -3,7 +3,7 @@ import numpy as np
 
 
 def resize(image, size):
-    image = F.interpolate(image.unsqueeze(0), size=size, mode="bilinear").squeeze(0)
+    image = F.interpolate(image.unsqueeze(0), size=size, mode="bilinear", align_corners=False).squeeze(0)
     return image
 
 

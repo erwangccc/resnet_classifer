@@ -10,35 +10,49 @@ from collections import OrderedDict
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets, transforms
 
-# print(datetime.datetime.now())
+
+def conv3x3(input_ch, output_ch, stride=1):
+    return nn.Conv2d(input_ch, output_ch, kernel_size=3,
+              stride=stride, padding=1, bias=False)
+
 
 class Basicblock(nn.Module):
     expansion= 1
-    def __init__(self, in_channels, out_channels, layer_id, downsample=None):
+
+    def __init__(self, in_channels, out_channels, layer_id, stride=1, downsample=None):
         super(Basicblock, self).__init__()
         self.in_ch = in_channels
         self.out_ch = out_channels
         self.layer_id = layer_id
         self.downsample = downsample
 
-    def conv_bn(self, in_channels, out_channels, ksize, stride, padding, n_layer, id):
+        self.conv1 = conv3x3(in_channels, out_channels, stride)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace = True)
+        self.conv2 = conv3x3(out_channels, out_channels)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+
+        # self.conv_1 = self.conv_bn_relu(in_channels, out_channels, stride=self.stride, n_layer = layer_id, id = 0)
+        # self.conv_2 = self.conv_bn(out_channels, out_channels, n_layer = layer_id, id = 1)
+
+    def conv_bn(self, in_channels, out_channels, n_layer, id):
         m = nn.Sequential(OrderedDict([
             ('conv{}_{}'.format(n_layer, id), nn.Conv2d(in_channels = in_channels,  # input channels
                                                         out_channels = out_channels,  # output_channels
-                                                        kernel_size = ksize,
-                                                        stride = stride,
-                                                        padding = padding)),
+                                                        kernel_size = 3,
+                                                        stride = 1,
+                                                        padding = 1)),
             ('bn{}_{}'.format(n_layer, id), nn.BatchNorm2d(out_channels))
         ]))
         return m
 
-    def conv_bn_relu(self, in_channels, out_channels, ksize, stride, padding, n_layer, id):
+    def conv_bn_relu(self, in_channels, out_channels, stride, n_layer, id):
         m = nn.Sequential(OrderedDict([
             ('conv{}_{}'.format(n_layer, id), nn.Conv2d(in_channels = in_channels,  # input channels
                                                         out_channels = out_channels,  # output_channels
-                                                        kernel_size = ksize,
+                                                        kernel_size = 3,
                                                         stride = stride,
-                                                        padding = padding)),
+                                                        padding = 1)),
             ('bn{}_{}'.format(n_layer, id), nn.BatchNorm2d(out_channels)),
             ('relu{}_{}'.format(n_layer, id), nn.ReLU())
         ]))
@@ -46,17 +60,21 @@ class Basicblock(nn.Module):
 
     def forward(self, x):
         residual = x
-        strd = 1
+        # strd = 1
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        out = self.conv2(out)
+        out = self.bn1(out)
         if self.downsample is not None:
             residual = self.downsample(x)
-            strd = 2
-
-        out = self.conv_bn_relu(self.in_ch, self.out_ch, 3, strd, 1, self.layer_id, 0)(x)
-        out = self.conv_bn(self.out_ch, self.out_ch, 3, 1, 1, self.layer_id, 1)(out)
-
+            # strd = 2
+        # out = self.conv_1(x)
+        # out = self.conv_2(out)
         out += residual  # The key of residual network
         out = nn.ReLU(inplace = True)(out)
         return out
+
 
 class ResNet18(nn.Module):
     def __init__(self, blocks, repeats, input_size, input_channel, num_classes=1000):
@@ -70,7 +88,7 @@ class ResNet18(nn.Module):
                                                  out_channels = self.first_channel, kernel_size = 7, stride = 2,
                                                  padding = 3)),
             ('bn{}_{}'.format(1, 1), nn.BatchNorm2d(self.first_channel)),
-            ('relu{}_{}'.format(1, 1), nn.ReLU()),
+            ('relu{}_{}'.format(1, 1), nn.ReLU(inplace=True)),
             ('pool{}_{}'.format(1, 1), nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1))]))
 
         self.layer1 = self.make_layer(blocks, 64, repeats[0], 2)
@@ -89,7 +107,7 @@ class ResNet18(nn.Module):
                 nn.BatchNorm2d(out_channels * res_block.expansion)
             )
         layers = [res_block(self.input_channel, out_channels * res_block.expansion,
-                            layer_id, downsample)]
+                            layer_id, stride, downsample)]
         self.input_channel = out_channels * res_block.expansion  # update input channel of next layer
         for i in range(1, repeat):
             # second convolution layer does not need to downsample
@@ -108,7 +126,7 @@ class ResNet18(nn.Module):
         out = out.view(out.size(0), -1)  # convert to [Batch, N]
         out = self.fc(out)
 
-        return nn.Softmax(dim = 1)(out)
+        return out
 
 
 if __name__=='__main__':
