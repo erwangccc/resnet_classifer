@@ -126,7 +126,7 @@ class ResNet18(nn.Module):
         out = out.view(out.size(0), -1)  # convert to [Batch, N]
         out = self.fc(out)
 
-        return nn.Softmax(dim=1)(out)
+        return out  # cross_entropy_loss will do softmax automatically
 
 
 if __name__=='__main__':
