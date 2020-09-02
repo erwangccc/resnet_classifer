@@ -9,7 +9,7 @@ from utils.utils import *
 
 from torch.utils.data import Dataset
 
-labels = {'cats': 0, 'dogs': 1, 'horses': 2, 'humans': 3}
+labels = {'cats': 0, 'dogs': 1, 'horses': 2, 'Humans': 3}
 
 class DataReader(Dataset):
     def __init__(self, img_folder, img_size):
@@ -21,7 +21,7 @@ class DataReader(Dataset):
         # Avoid out of range
         img_path = self.img_list[item % self.data_len]
         # get label number
-        files = img_path.split('\\')
+        files = img_path.split('/')
         label = files[1]
         pil_img = Image.open(img_path)
         img = tv.transforms.ToTensor()(pil_img)
