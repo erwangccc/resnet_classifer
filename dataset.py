@@ -16,6 +16,11 @@ class DataReader(Dataset):
         self.img_size= img_size
         self.img_list = sorted(glob.glob(r'data/*/*.*'))
         self.data_len = len(self.img_list)
+        self.data_tranform = tv.transforms.Compose([
+            tv.transforms.ToTensor(),
+            tv.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+
+        ])
 
     def __getitem__(self, item):
         # Avoid out of range
@@ -24,7 +29,7 @@ class DataReader(Dataset):
         files = img_path.split('/')
         label = files[1]
         pil_img = Image.open(img_path)
-        img = tv.transforms.ToTensor()(pil_img)
+        img = self.data_tranform(pil_img)
         img_ = pad_to_square(img, 0)
         img_ = resize(img_, self.img_size)
         # one_hot_labels = F.one_hot(labels[label], num_classes=4)

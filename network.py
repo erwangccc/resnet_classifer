@@ -126,7 +126,7 @@ class ResNet18(nn.Module):
         out = out.view(out.size(0), -1)  # convert to [Batch, N]
         out = self.fc(out)
 
-        return out
+        return nn.Softmax(dim=1)(out)
 
 
 if __name__=='__main__':
