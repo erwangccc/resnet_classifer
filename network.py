@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Author: ShaoChang Wang
 # Time: 2020-08-25 23:20:08
-
+import math
 import torch
 import torchvision
 from torch import nn
@@ -32,47 +32,21 @@ class Basicblock(nn.Module):
         self.conv2 = conv3x3(out_channels, out_channels)
         self.bn2 = nn.BatchNorm2d(out_channels)
 
-        # self.conv_1 = self.conv_bn_relu(in_channels, out_channels, stride=self.stride, n_layer = layer_id, id = 0)
-        # self.conv_2 = self.conv_bn(out_channels, out_channels, n_layer = layer_id, id = 1)
-
-    def conv_bn(self, in_channels, out_channels, n_layer, id):
-        m = nn.Sequential(OrderedDict([
-            ('conv{}_{}'.format(n_layer, id), nn.Conv2d(in_channels = in_channels,  # input channels
-                                                        out_channels = out_channels,  # output_channels
-                                                        kernel_size = 3,
-                                                        stride = 1,
-                                                        padding = 1)),
-            ('bn{}_{}'.format(n_layer, id), nn.BatchNorm2d(out_channels))
-        ]))
-        return m
-
-    def conv_bn_relu(self, in_channels, out_channels, stride, n_layer, id):
-        m = nn.Sequential(OrderedDict([
-            ('conv{}_{}'.format(n_layer, id), nn.Conv2d(in_channels = in_channels,  # input channels
-                                                        out_channels = out_channels,  # output_channels
-                                                        kernel_size = 3,
-                                                        stride = stride,
-                                                        padding = 1)),
-            ('bn{}_{}'.format(n_layer, id), nn.BatchNorm2d(out_channels)),
-            ('relu{}_{}'.format(n_layer, id), nn.ReLU())
-        ]))
-        return m
-
     def forward(self, x):
         residual = x
-        # strd = 1
+
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
+
         out = self.conv2(out)
-        out = self.bn1(out)
+        out = self.bn2(out)
+
         if self.downsample is not None:
             residual = self.downsample(x)
-            # strd = 2
-        # out = self.conv_1(x)
-        # out = self.conv_2(out)
+
         out += residual  # The key of residual network
-        out = nn.ReLU(inplace = True)(out)
+        out = self.relu(out)
         return out
 
 
@@ -83,10 +57,16 @@ class ResNet18(nn.Module):
         self.first_channel = 64
         self.input_channel = self.first_channel
 
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
         self.first_layer = nn.Sequential(OrderedDict([
-            ('conv{}_{}'.format(1, 1), nn.Conv2d(in_channels = input_channel,
-                                                 out_channels = self.first_channel, kernel_size = 7, stride = 2,
-                                                 padding = 3)),
+            ('conv{}_{}'.format(1, 1), nn.Conv2d(in_channels=input_channel,
+                                                 out_channels=self.first_channel, kernel_size=7, stride=2,
+                                                 padding=3, bias=False)),
             ('bn{}_{}'.format(1, 1), nn.BatchNorm2d(self.first_channel)),
             ('relu{}_{}'.format(1, 1), nn.ReLU(inplace=True)),
             ('pool{}_{}'.format(1, 1), nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1))]))
@@ -95,15 +75,23 @@ class ResNet18(nn.Module):
         self.layer2 = self.make_layer(blocks, 128, repeats[1], 3, stride=2)
         self.layer3 = self.make_layer(blocks, 256, repeats[2], 4, stride=2)
         self.layer4 = self.make_layer(blocks, 512, repeats[3], 5, stride=2)
-        self.avgp = nn.AvgPool2d(7)
+        self.avgp = nn.AvgPool2d(7, stride=1)
         self.fc = nn.Linear(512, num_classes)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
     def make_layer(self, res_block, out_channels, repeat, layer_id, stride=1):
         downsample = None
         if stride != 1 or self.input_channel != out_channels * res_block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.input_channel, out_channels * res_block.expansion,kernel_size=1,
-                          stride = stride, bias = False),
+                nn.Conv2d(self.input_channel, out_channels * res_block.expansion, kernel_size=1,
+                          stride=stride, bias=False),
                 nn.BatchNorm2d(out_channels * res_block.expansion)
             )
         layers = [res_block(self.input_channel, out_channels * res_block.expansion,
@@ -116,7 +104,11 @@ class ResNet18(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        out = self.first_layer(x)
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        out = self.maxpool(out)
+
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
