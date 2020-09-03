@@ -18,25 +18,26 @@ if __name__=='__main__':
     parser.add_argument("--batch_size", type=int, default = 1, help= "training batch sizes")
     parser.add_argument("--n_cpu", type=int, default = 8, help= "cpu number used when training")
     parser.add_argument("--log_path", type=str, default= "logs/resnet_classifier", help= "path of saving logs")
-    parser.add_argument("--weights_path", type=str, default= "resnet18_clf_200.pth", help= "path of saving weights")
-    parser.add_argument("--test_path", type=str, default="data/", help= "cpu number used when training")
+    parser.add_argument("--weights_path", type=str, default= "weights/custom/resnet18_custom_200.pth", help= "path of saving weights")
+    parser.add_argument("--test_path", type=str, default="data/custom/", help= "cpu number used when training")
+    parser.add_argument("--data_name", type=str, default="custom", help="the data name we want to load")
 
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # resnet = ResNet(BasicBlock, [2, 2, 2, 2], 4)
-
-    resnet = ResNet18(Basicblock, [2, 2, 2, 2], 224, 3, 4)
+    resnet = ResNet18(Basicblock, [2, 2, 2, 2], args.input_size, 3, args.num_classes)
     resnet.load_state_dict(torch.load(args.weights_path))
 
     # load train dataset
-    test_dataset = data_loader(args.test_path, args.input_size,
-                               args.batch_size, args.n_cpu)
+    train_loader, test_loader = get_dataset(args.test_path, args.input_size,
+                                            args.batch_size, args.n_cpu)
 
     resnet = resnet.to(device)
 
-    progressbar = tqdm(test_dataset)
+    progressbar = tqdm(test_loader)
     test_accuracy = 0
-    for batch_idx, (path, imgs, targets) in enumerate(progressbar):
+    resnet.eval()
+    for batch_idx, (imgs, targets) in enumerate(progressbar):
         imgs = imgs.to(device)
         targets = targets.to(device)
         # optimizer set to zero
@@ -44,11 +45,8 @@ if __name__=='__main__':
         res = output.argmax()
         if res.item() == targets.item():
             test_accuracy+=1
-    print(test_accuracy)
-        # progressbar.set_description('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #     epoch, batch_idx * len(imgs), len(train_dataset.dataset),
-        #            100. * (batch_idx+1) / len(train_dataset),
-        #            train_loss / (batch_idx+1) * len(imgs)))
+
+    print('Acc/{}-{}-{}'.format(args.data_name, test_accuracy, test_accuracy / len(test_loader.dataset)))
 
 
 
