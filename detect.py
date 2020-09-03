@@ -36,7 +36,7 @@ if __name__=='__main__':
 
     progressbar = tqdm(test_loader)
     test_accuracy = 0
-    resnet.eval()
+    resnet.eval()  # set evaluation mode
     for batch_idx, (imgs, targets) in enumerate(progressbar):
         imgs = imgs.to(device)
         targets = targets.to(device)
