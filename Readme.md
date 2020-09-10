@@ -8,7 +8,7 @@ tensorborad > 2.0
 
 ## Dataset
 
-You can originaze dataset like this:
+You can organize dataset like this:
 
 ```
 ---data
@@ -51,7 +51,3 @@ Remeber to change 'labels'  to your class name at *dataset.py* line 13.
 Set the options you want to adjust for better results at *train.py* line 16-28.
 
 ![Train Results](resnet18_train_acc.png)
-
-## Predict
-
-Set the options you want to adjust for test result you train at *detect.py* line 16-23.
