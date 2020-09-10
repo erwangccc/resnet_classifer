@@ -51,7 +51,7 @@ class Basicblock(nn.Module):
 
 
 class ResNet18(nn.Module):
-    def __init__(self, blocks, repeats, input_size, input_channel, num_classes=1000):
+    def __init__(self, blocks, repeats, input_size, num_classes=1000):
         super(ResNet18, self).__init__()
         self.input_size = input_size
         self.first_channel = 64
@@ -63,13 +63,13 @@ class ResNet18(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.first_layer = nn.Sequential(OrderedDict([
-            ('conv{}_{}'.format(1, 1), nn.Conv2d(in_channels=input_channel,
-                                                 out_channels=self.first_channel, kernel_size=7, stride=2,
-                                                 padding=3, bias=False)),
-            ('bn{}_{}'.format(1, 1), nn.BatchNorm2d(self.first_channel)),
-            ('relu{}_{}'.format(1, 1), nn.ReLU(inplace=True)),
-            ('pool{}_{}'.format(1, 1), nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1))]))
+        # self.first_layer = nn.Sequential(OrderedDict([
+        #     ('conv{}_{}'.format(1, 1), nn.Conv2d(in_channels=3,
+        #                                          out_channels=self.first_channel, kernel_size=7, stride=2,
+        #                                          padding=3, bias=False)),
+        #     ('bn{}_{}'.format(1, 1), nn.BatchNorm2d(self.first_channel)),
+        #     ('relu{}_{}'.format(1, 1), nn.ReLU(inplace=True)),
+        #     ('pool{}_{}'.format(1, 1), nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1))]))
 
         self.layer1 = self.make_layer(blocks, 64, repeats[0], 2)
         self.layer2 = self.make_layer(blocks, 128, repeats[1], 3, stride=2)
@@ -127,10 +127,6 @@ if __name__=='__main__':
     log_path = 'logs'
     writer = SummaryWriter(log_path, 'Training process of cars detection via ResNet18!')
     # Save model structure
-    # transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
-    # trainset = datasets.MNIST('mnist', train = True, download = True, transform = transform)
-    # trainloader = torch.utils.data.DataLoader(trainset, batch_size = 64, shuffle = True)
-    # images, labels = next(iter(trainloader))
     dummy_input = torch.randn(1, 3, 224, 224, requires_grad = True)
 
     grid = torchvision.utils.make_grid(dummy_input)
