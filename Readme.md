@@ -51,3 +51,7 @@ Remeber to change 'labels'  to your class name at *dataset.py* line 13.
 Set the options you want to adjust for better results at *train.py* line 16-28.
 
 ![Train Results](resnet18_train_acc.png)
+
+## Predict
+
+Set the options you want to adjust for testing result you train at *detect.py* line 16-23.
