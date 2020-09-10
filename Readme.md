@@ -8,7 +8,7 @@ tensorborad > 2.0
 
 ## Dataset
 
-You can originaze dataset like this:
+You can organize dataset like this:
 
 ```
 ---data
