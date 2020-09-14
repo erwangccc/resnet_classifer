@@ -29,7 +29,7 @@ if __name__=='__main__':
 
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    writer = SummaryWriter(args.log_path, 'Training process of cars detection via ResNet18!')
+    writer = SummaryWriter(args.log_path, 'Training process of mutil-labels classifier via ResNet18!')
     CEloss = nn.CrossEntropyLoss()
     # resnet = ResNet(BasicBlock, [2, 2, 2, 2], args.num_classes)
     resnet = ResNet18(Basicblock, [2, 2, 2, 2], args.input_size, 3, args.num_classes)
